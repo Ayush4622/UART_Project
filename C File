@@ -1,0 +1,46 @@
+#include <windows.h>
+#include <stdio.h>
+
+void send_uart_data(const char *port_name, char data) {
+    HANDLE hSerial = CreateFile(port_name, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+
+    if (hSerial == INVALID_HANDLE_VALUE) {
+        printf("Error opening port %s\n", port_name);
+        return;
+    }
+
+    DCB dcbSerialParams = {0};
+    dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
+    
+    if (!GetCommState(hSerial, &dcbSerialParams)) {
+        printf("Error getting port state\n");
+        CloseHandle(hSerial);
+        return;
+    }
+
+    dcbSerialParams.BaudRate = CBR_9600;
+    dcbSerialParams.ByteSize = 8;
+    dcbSerialParams.StopBits = ONESTOPBIT;
+    dcbSerialParams.Parity = NOPARITY;
+
+    if (!SetCommState(hSerial, &dcbSerialParams)) {
+        printf("Error setting port state\n");
+        CloseHandle(hSerial);
+        return;
+    }
+
+    DWORD bytes_written;
+    WriteFile(hSerial, &data, 1, &bytes_written, NULL);
+
+    printf("Sent character: %c\n", data);
+    CloseHandle(hSerial);
+}
+
+int main() {
+    char input;
+    printf("Enter a character to send via UART: ");
+    scanf(" %c", &input);
+    
+    send_uart_data("COM6", input);  // Change COM6 to your actual port
+    return 0;
+}
